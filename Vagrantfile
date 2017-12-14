@@ -23,8 +23,8 @@ $master_ip = $config["master_ip"]
 $network_provider = $config["network_provider"]
 
 Vagrant.configure(2) do |config|
-  config.vm.box = "fedora25"
-  config.vm.box_url = "https://mirrors.lug.mtu.edu/fedora/linux/releases/25/CloudImages/x86_64/images/Fedora-Cloud-Base-Vagrant-25-1.3.x86_64.vagrant-libvirt.box"
+  config.vm.box = "centos7-new"
+  config.vm.box_url = "http://cloud.centos.org/centos/7/vagrant/x86_64/images/CentOS-7-x86_64-Vagrant-1711_01.Libvirt.box"
 
   if Vagrant.has_plugin?("vagrant-cachier") and $cache_rpm then
       config.cache.scope = :machine
@@ -81,6 +81,16 @@ Vagrant.configure(2) do |config|
           end
       end
 
+      if Vagrant.has_plugin?("vagrant-reload")
+         master.vm.provision "shell", inline: <<-SHELL
+           #! /bin/bash
+           rpm -Uvh http://cbs.centos.org/kojifiles/packages/kernel/3.18.44/20.el7/x86_64/kernel-3.18.44-20.el7.x86_64.rpm
+        SHELL
+
+         # trigger reload
+        master.vm.provision :reload
+      end
+
       master.vm.provision "shell", inline: <<-SHELL
         #!/bin/bash
         set -xe
@@ -105,6 +115,16 @@ Vagrant.configure(2) do |config|
             if $cache_docker then
                     domain.storage :file, :size => '10G', :path => $libvirt_prefix.to_s + '_node_docker' + suffix.to_s + '.img', :allow_existing => true
             end
+        end
+
+        if Vagrant.has_plugin?("vagrant-reload")
+          node.vm.provision "shell", inline: <<-SHELL
+             #! /bin/bash
+             rpm -Uvh http://cbs.centos.org/kojifiles/packages/kernel/3.18.44/20.el7/x86_64/kernel-3.18.44-20.el7.x86_64.rpm
+          SHELL
+
+           # trigger reload
+          node.vm.provision :reload
         end
 
         node.vm.provision "shell", inline: <<-SHELL
